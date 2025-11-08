@@ -1,0 +1,463 @@
+openapi: 3.0.0
+info:
+  title: Logic Grid Puzzle Solver API
+  version: 1.0.0
+  description: API for managing logic grid puzzles and solver state
+
+servers:
+  - url: http://localhost:3000/api/v1
+    description: Local development server
+
+paths:
+  /puzzles:
+    get:
+      summary: List all available puzzles
+      description: Returns a list of puzzle definitions available in the system
+      operationId: listPuzzles
+      responses:
+        '200':
+          description: List of puzzles retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/PuzzleSummary'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    
+  /puzzles/{puzzleId}:
+    get:
+      summary: Get puzzle definition
+      description: Returns the complete definition of a specific puzzle
+      operationId: getPuzzle
+      parameters:
+        - name: puzzleId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Puzzle definition retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Puzzle'
+        '404':
+          description: Puzzle not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /puzzles/{puzzleId}/state:
+    get:
+      summary: Get current puzzle state
+      description: Returns the current state of the puzzle grid
+      operationId: getPuzzleState
+      parameters:
+        - name: puzzleId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Puzzle state retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GridState'
+        '404':
+          description: Puzzle or state not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /puzzles/{puzzleId}/marks:
+    post:
+      summary: Make a new mark on the grid
+      description: Add a new mark (confirmed/eliminated) to a cell
+      operationId: addMark
+      parameters:
+        - name: puzzleId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Mark'
+      responses:
+        '200':
+          description: Mark added successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MarkResult'
+        '400':
+          description: Invalid mark
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Puzzle not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: Mark conflicts with existing state
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /puzzles/{puzzleId}/save:
+    post:
+      summary: Save current puzzle state
+      description: Create a new save point for the current puzzle state
+      operationId: savePuzzleState
+      parameters:
+        - name: puzzleId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                  description: Optional name for the save point
+      responses:
+        '200':
+          description: State saved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SaveResult'
+        '404':
+          description: Puzzle not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /puzzles/{puzzleId}/saves:
+    get:
+      summary: List save points
+      description: Returns a list of available save points for a puzzle
+      operationId: listSavePoints
+      parameters:
+        - name: puzzleId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Save points retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/SavePoint'
+        '404':
+          description: Puzzle not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+components:
+  schemas:
+    PuzzleSummary:
+      type: object
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+        description:
+          type: string
+        categories:
+          type: array
+          items:
+            type: string
+        modified:
+          type: string
+          format: date-time
+      required:
+        - id
+        - title
+        - categories
+        - modified
+
+    Puzzle:
+      type: object
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+        description:
+          type: string
+        categories:
+          type: array
+          items:
+            $ref: '#/components/schemas/Category'
+        clues:
+          type: array
+          items:
+            $ref: '#/components/schemas/Clue'
+        created:
+          type: string
+          format: date-time
+        modified:
+          type: string
+          format: date-time
+      required:
+        - id
+        - title
+        - categories
+        - clues
+        - created
+        - modified
+
+    Category:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/Item'
+      required:
+        - id
+        - name
+        - items
+
+    Item:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+      required:
+        - id
+        - name
+
+    Clue:
+      type: object
+      properties:
+        id:
+          type: string
+        text:
+          type: string
+        relationships:
+          type: array
+          items:
+            $ref: '#/components/schemas/Relationship'
+      required:
+        - id
+        - text
+        - relationships
+
+    Relationship:
+      type: object
+      properties:
+        type:
+          type: string
+          enum: [MUST, CANNOT]
+        fromCategory:
+          type: string
+        fromItem:
+          type: string
+        toCategory:
+          type: string
+        toItem:
+          type: string
+      required:
+        - type
+        - fromCategory
+        - fromItem
+        - toCategory
+        - toItem
+
+    GridState:
+      type: object
+      properties:
+        puzzleId:
+          type: string
+        cells:
+          type: array
+          items:
+            type: array
+            items:
+              $ref: '#/components/schemas/CellState'
+        modified:
+          type: string
+          format: date-time
+      required:
+        - puzzleId
+        - cells
+        - modified
+
+    CellState:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [UNKNOWN, CONFIRMED, ELIMINATED]
+        userMarked:
+          type: boolean
+        deducedFrom:
+          type: array
+          items:
+            type: string
+      required:
+        - status
+        - userMarked
+
+    Mark:
+      type: object
+      properties:
+        cellX:
+          type: integer
+          minimum: 0
+        cellY:
+          type: integer
+          minimum: 0
+        status:
+          type: string
+          enum: [CONFIRMED, ELIMINATED]
+      required:
+        - cellX
+        - cellY
+        - status
+
+    MarkResult:
+      type: object
+      properties:
+        applied:
+          type: boolean
+        changes:
+          type: array
+          items:
+            $ref: '#/components/schemas/Change'
+      required:
+        - applied
+        - changes
+
+    Change:
+      type: object
+      properties:
+        timestamp:
+          type: string
+          format: date-time
+        cellX:
+          type: integer
+        cellY:
+          type: integer
+        oldStatus:
+          type: string
+          enum: [UNKNOWN, CONFIRMED, ELIMINATED]
+        newStatus:
+          type: string
+          enum: [UNKNOWN, CONFIRMED, ELIMINATED]
+        automatic:
+          type: boolean
+      required:
+        - timestamp
+        - cellX
+        - cellY
+        - oldStatus
+        - newStatus
+        - automatic
+
+    SavePoint:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        timestamp:
+          type: string
+          format: date-time
+      required:
+        - id
+        - timestamp
+
+    SaveResult:
+      type: object
+      properties:
+        id:
+          type: string
+        timestamp:
+          type: string
+          format: date-time
+      required:
+        - id
+        - timestamp
+
+    Error:
+      type: object
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+      required:
+        - code
+        - message
