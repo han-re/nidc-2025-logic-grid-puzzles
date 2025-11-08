@@ -31,7 +31,23 @@
 
 *GATE: Must pass before Phase 0 research. Re-check after Phase 1 design.*
 
-[Gates determined based on constitution file]
+Gates (examples derived from the project constitution):
+
+- Test-First: Contract or integration tests are defined for the primary user journeys, or a
+  documented justification exists if contracts cannot be executed in Phase 0. Tests should be
+  prioritized (contract/integration → e2e → unit) and noted in this section.
+- Branching & PR readiness: Branch strategy conforms to the constitution (short-lived branch,
+  single logical change) and the PR will include the PR checklist items (tests, docs, run
+  instructions, constitutional compliance note).
+- Automated checks: CI checks required by the repo (lint, type checks, test runners) are listed
+  and any gaps are documented with local reproduction steps.
+- Observability & Versioning: The plan documents logging/metrics strategy and versioning
+  approach for the feature; if centralized tooling is unavailable, describe the local equivalents.
+- Constraints: Any security, performance, or compliance constraints that would affect design
+  choices must be noted.
+
+Fill the "Complexity Tracking" table below ONLY if the Constitution Check has violations that
+must be justified.
 
 ## Project Structure
 
